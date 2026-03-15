@@ -81,4 +81,54 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// This function will handle the submission.
+async function onSubmit(e) {
+  e.preventDefault();
+  const person = { ...form };
+  try {
+    // if the id is present, we will set the URL to /record/:id, otherwise we will set the URL to /record.
+    const response = await fetch(`http://localhost:5050/record${params.id ? "/"+params.id : ""}`, {
+      // if the id is present, we will use the PATCH method, otherwise we will use the POST method.
+      method: `${params.id ? "PATCH" : "POST"}`,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(person),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('A problem occurred with your fetch operation: ', error);
+  } finally {
+    setForm({ name: "", position: "", level: "" });
+    navigate("/");
+  }
+}
+
+useEffect(() => {
+  async function fetchData() {
+    const id = params.id?.toString() || undefined;
+    if(!id) return;
+    const response = await fetch(
+      `http://localhost:5050/record/${params.id.toString()}`
+    );
+    if (!response.ok) {
+      const message = `An error has occurred: ${response.statusText}`;
+      console.error(message);
+      return;
+    }
+    const record = await response.json();
+    if (!record) {
+      console.warn(`Record with id ${id} not found`);
+      navigate("/");
+      return;
+    }
+    setForm(record);
+  }
+  fetchData();
+  return;
+}, [params.id, navigate]);
+
 export default router;
