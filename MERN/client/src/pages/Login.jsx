@@ -40,20 +40,36 @@ export default function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
-      setSubmitted(true);
-      console.log("Form submitted:", formData);
-      // Reset form
-      setFormData({
-        email: "",
-        password: "",
-      });
-      // Reset submitted state after 3 seconds
-      setTimeout(() => setSubmitted(false), 3000);
+      try {
+        const response = await fetch("http://localhost:5050/record/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: formData.email.trim(), password: formData.password }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setErrors({ form: errorData.error || "Invalid login" });
+          return;
+        }
+
+        const data = await response.json();
+        console.log("Login success:", data);
+
+        setSubmitted(true);
+        setFormData({ email: "", password: "" });
+        setTimeout(() => setSubmitted(false), 3000);
+      } catch (error) {
+        console.error(error);
+        setErrors({ form: "Unable to login at this time. Try again." });
+      }
     } else {
       setErrors(newErrors);
     }
@@ -66,6 +82,11 @@ export default function Login() {
           Login
         </h1>
 
+        {errors.form && (
+          <div style={{ color: "red", marginBottom: "10px" }}>
+            {errors.form}
+          </div>
+        )}
         {submitted && (
           <div>
             Login successful!
