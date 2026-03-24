@@ -57,23 +57,47 @@ export default function Signup() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
-      setSubmitted(true);
-      console.log("Form submitted:", formData);
-      // Reset form
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-      // Reset submitted state after 3 seconds
-      setTimeout(() => setSubmitted(false), 3000);
+      const payload = {
+        name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        position: "User",
+        level: "New",
+        email: formData.email.trim(),
+        password: formData.password,
+      };
+
+      try {
+        const response = await fetch("http://localhost:5050/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to create signup record: ${response.status}`);
+        }
+
+        setSubmitted(true);
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+
+        setTimeout(() => setSubmitted(false), 3000);
+      } catch (error) {
+        console.error(error);
+        setErrors({ form: "Unable to create account at this time. Try again." });
+      }
     } else {
       setErrors(newErrors);
     }
@@ -86,6 +110,11 @@ export default function Signup() {
           Create an Account
         </h1>
 
+        {errors.form && (
+          <div style={{ color: "red", marginBottom: "10px" }}>
+            {errors.form}
+          </div>
+        )}
         {submitted && (
           <div>
             Account created successfully!
