@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -76,73 +77,57 @@ export default function Login() {
   };
 
   return (
-    <div>
-      <div>
-        <h1>
-          Login
-        </h1>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div>
+          <h1 className="auth-heading">Login</h1>
+          <p className="auth-text">Enter your details to access your GatorLink dashboard.</p>
+        </div>
 
-        {errors.form && (
-          <div style={{ color: "red", marginBottom: "10px" }}>
-            {errors.form}
-          </div>
-        )}
-        {submitted && (
-          <div>
-            Login successful!
-          </div>
-        )}
+        {errors.form && <div className="form-error">{errors.form}</div>}
+        {submitted && <div className="success-message">Login successful!</div>}
 
         <form onSubmit={handleSubmit}>
-          <div>
-            <label>
-              Email:
-            </label>
+          <div className="form-field">
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
+              className="auth-input"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Nick@example.com"
+              placeholder="nick@example.com"
             />
-            {errors.email && (
-              <p>{errors.email}</p>
-            )}
+            {errors.email && <p className="field-error">{errors.email}</p>}
           </div>
 
-          <div>
-            <label>
-              Password:
-            </label>
+          <div className="form-field">
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
+              className="auth-input"
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter password"
+              placeholder="Enter your password"
             />
-            {errors.password && (
-              <p>{errors.password}</p>
-            )}
+            {errors.password && <p className="field-error">{errors.password}</p>}
           </div>
 
-          <button
-            type="submit"
-          >
+          <button type="submit" className="auth-button">
             Login
           </button>
         </form>
 
-        <p>
-          Don't have an account?{" "}
-          <a href="/signup">
-            Sign up here
-          </a>
+        <p className="auth-note">
+          Don't have an account? <Link className="auth-link" to="/SignUp">Sign up here</Link>
         </p>
 
-        <a href="/Home">
+        <Link className="home-link" to="/">
           Back to Home
-        </a>
+        </Link>
       </div>
     </div>
   );
