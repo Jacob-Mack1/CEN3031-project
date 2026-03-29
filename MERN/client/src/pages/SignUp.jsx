@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -104,121 +105,99 @@ export default function Signup() {
   };
 
   return (
-    <div>
-      <div>
-        <h1>
-          Create an Account
-        </h1>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div>
+          <h1 className="auth-heading">Create an Account</h1>
+          <p className="auth-text">Create your GatorLink account and start connecting with fellow students.</p>
+        </div>
 
-        {errors.form && (
-          <div style={{ color: "red", marginBottom: "10px" }}>
-            {errors.form}
-          </div>
-        )}
-        {submitted && (
-          <div>
-            Account created successfully!
-          </div>
-        )}
+        {errors.form && <div className="form-error">{errors.form}</div>}
+        {submitted && <div className="success-message">Account created successfully!</div>}
 
         <form onSubmit={handleSubmit}>
-          <div>
-            <label>
-              First Name:
-            </label>
+          <div className="form-field">
+            <label htmlFor="firstName">First Name</label>
             <input
+              id="firstName"
+              className="auth-input"
               type="text"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
               placeholder="First"
             />
-            {errors.firstName && (
-              <p>{errors.firstName}</p>
-            )}
+            {errors.firstName && <p className="field-error">{errors.firstName}</p>}
           </div>
 
-          <div>
-            <label>
-              Last Name:
-            </label>
+          <div className="form-field">
+            <label htmlFor="lastName">Last Name</label>
             <input
+              id="lastName"
+              className="auth-input"
               type="text"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
               placeholder="Last"
             />
-            {errors.lastName && (
-              <p>{errors.lastName}</p>
-            )}
+            {errors.lastName && <p className="field-error">{errors.lastName}</p>}
           </div>
 
-          <div>
-            <label>
-              Email:
-            </label>
+          <div className="form-field">
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
+              className="auth-input"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Nick@example.com"
+              placeholder="nick@example.com"
             />
-            {errors.email && (
-              <p>{errors.email}</p>
-            )}
+            {errors.email && <p className="field-error">{errors.email}</p>}
           </div>
 
-          <div>
-            <label>
-              Password:
-            </label>
+          <div className="form-field">
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
+              className="auth-input"
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter password"
+              placeholder="Enter your password"
             />
-            {errors.password && (
-              <p>{errors.password}</p>
-            )}
+            {errors.password && <p className="field-error">{errors.password}</p>}
           </div>
 
-          <div>
-            <label>
-              Confirm Password:
-            </label>
+          <div className="form-field">
+            <label htmlFor="confirmPassword">Confirm Password</label>
             <input
+              id="confirmPassword"
+              className="auth-input"
               type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirm password"
+              placeholder="Confirm your password"
             />
-            {errors.confirmPassword && (
-              <p>{errors.confirmPassword}</p>
-            )}
+            {errors.confirmPassword && <p className="field-error">{errors.confirmPassword}</p>}
           </div>
 
-          <button
-            type="submit"
-          >
+          <button type="submit" className="auth-button">
             Sign Up
           </button>
         </form>
 
-        <p>
-          Already have an account?{" "}
-          <a href="/login">
-            Login here
-          </a>
+        <p className="auth-note">
+          Already have an account? <Link className="auth-link" to="/Login">Login here</Link>
         </p>
 
-        <a href="/Home">
+        <Link className="home-link" to="/">
           Back to Home
-        </a>
+        </Link>
       </div>
     </div>
   );
