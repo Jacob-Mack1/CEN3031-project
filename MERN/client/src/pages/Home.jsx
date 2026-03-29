@@ -1,7 +1,16 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import creatureImage from '../Images/tbh-creature-ddr.gif';
 
 export default function Home() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem('gatorlinkLoggedIn') === 'true') {
+      navigate('/Dashboard');
+    }
+  }, [navigate]);
+
   return (
     <div className="home-container">
       <header className="hero-section">
