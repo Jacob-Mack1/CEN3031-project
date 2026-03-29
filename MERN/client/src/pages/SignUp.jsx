@@ -1,25 +1,29 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    anonymous: false,
   });
 
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === "checkbox" ? checked : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: fieldValue,
     }));
-    // Clear error for this field when user starts typing
+
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -67,6 +71,7 @@ export default function Signup() {
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
         position: "User",
         level: "New",
+        anonymous: formData.anonymous,
         email: formData.email.trim(),
         password: formData.password,
       };
@@ -85,16 +90,8 @@ export default function Signup() {
         }
 
         setSubmitted(true);
-        // Reset form
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-        });
-
-        setTimeout(() => setSubmitted(false), 3000);
+        localStorage.setItem("gatorlinkLoggedIn", "true");
+        navigate("/Dashboard");
       } catch (error) {
         console.error(error);
         setErrors({ form: "Unable to create account at this time. Try again." });
@@ -116,6 +113,19 @@ export default function Signup() {
         {submitted && <div className="success-message">Account created successfully!</div>}
 
         <form onSubmit={handleSubmit}>
+          <div className="form-field checkbox-field">
+            <label htmlFor="anonymous">
+              <input
+                id="anonymous"
+                type="checkbox"
+                name="anonymous"
+                checked={formData.anonymous}
+                onChange={handleChange}
+              />
+              Mark as anonymous account
+            </label>
+          </div>
+
           <div className="form-field">
             <label htmlFor="firstName">First Name</label>
             <input

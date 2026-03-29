@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -64,9 +65,8 @@ export default function Login() {
         const data = await response.json();
         console.log("Login success:", data);
 
-        setSubmitted(true);
-        setFormData({ email: "", password: "" });
-        setTimeout(() => setSubmitted(false), 3000);
+        localStorage.setItem("gatorlinkLoggedIn", "true");
+        navigate("/Dashboard");
       } catch (error) {
         console.error(error);
         setErrors({ form: "Unable to login at this time. Try again." });
@@ -75,6 +75,12 @@ export default function Login() {
       setErrors(newErrors);
     }
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("gatorlinkLoggedIn") === "true") {
+      navigate("/Dashboard");
+    }
+  }, [navigate]);
 
   return (
     <div className="auth-page">

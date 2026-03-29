@@ -1,5 +1,6 @@
 import express from "express";
 import { ObjectId } from "mongodb";
+import crypto from "crypto";
 import db from "../db/connection.js";
 
 const router = express.Router();
@@ -34,17 +35,29 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const payload = req.body;
-    if (!payload.name) {
+    const { name, position, level, email, password, anonymous } = req.body;
+
+    if (!name || !name.trim()) {
       return res.status(400).json({ error: "Name is required" });
     }
 
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+
+    const hashedPassword = crypto.createHash("sha256").update(password).digest("hex");
+
     const newRecord = {
-      name: payload.name,
-      position: payload.position || "User",
-      level: payload.level || "New",
-      email: payload.email || "",
-      password: payload.password || "",
+      name: name,
+      position: position || "User",
+      level: level || "New",
+      email: email,
+      password: hashedPassword,
+      anonymous: !!anonymous,
       createdAt: new Date(),
     };
 
@@ -64,7 +77,9 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const user = await collection.findOne({ email, password });
+    const hashedPassword = crypto.createHash("sha256").update(password).digest("hex");
+
+    const user = await collection.findOne({ email, password: hashedPassword });
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
