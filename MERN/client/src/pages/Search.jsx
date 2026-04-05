@@ -13,7 +13,8 @@ export default function Search() {
       return;
     }
     setError('');
-    // Handle search logic here
+    
+    // TODO: Implement search functionality here
     console.log('Searching for class:', classCode);
   };
 
