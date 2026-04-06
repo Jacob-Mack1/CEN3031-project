@@ -163,7 +163,7 @@ export default function Signup() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="nick@example.com"
+              placeholder="MyEmail@example.com"
             />
             {errors.email && <p className="field-error">{errors.email}</p>}
           </div>
