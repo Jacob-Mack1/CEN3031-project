@@ -220,27 +220,26 @@ export default function Search() {
             {/* Course Post */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden" style={{backgroundColor:'lightblue'}}>
               <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white">
-                <h2 className="text-4xl font-bold mb-2">{searchResult.classCode}</h2>
-                <p className="text-indigo-100">{searchResult.courseName}</p>
+                <h2 className="text-4xl font-bold mb-2" style={{fontFamily: 'Verdana', marginBottom: '-1rem'}}>{searchResult.classCode}</h2>
+                <p className="text-indigo-100" style={{fontFamily: 'Verdana', marginTop: '0.5rem', marginBottom: '-1rem'}}> {searchResult.courseName}</p>
               </div>
               <div className="p-6 space-y-4" style={{backgroundColor:'orange'}}>
                 {searchResult.description && (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                    <p className="text-gray-700 leading-relaxed">{searchResult.description}</p>
+                    <h3 className="font-semibold text-gray-900 mb-2" style={{marginBottom: '-0.5rem'}}>Description</h3>
+                    <p className="text-gray-700 leading-relaxed" style={{marginTop:'0.5rem', marginBottom: '-1rem'}}>{searchResult.description}</p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                   {searchResult.instructor && (
                     <div>
-                      <p className="text-sm text-gray-600">Instructor</p>
-                      <p className="font-semibold text-gray-900">{searchResult.instructor}</p>
+                      <p className="text-sm text-gray-600" style={{fontWeight:'bold', marginBottom: '0rem'}}><b></b>Instructor</p>
+                      <p className="font-semibold text-gray-900" style={{marginTop:'-0.5rem', marginBottom: '-1rem'}}> {searchResult.instructor}</p>
                     </div>
                   )}
                   {searchResult.credits && (
                     <div>
-                      <p className="text-sm text-gray-600">Credits</p>
-                      <p className="font-semibold text-gray-900">{searchResult.credits}</p>
+                      <p className="text-sm text-gray-600" style={{fontWeight: 'bold', marginBottom: '-1rem'}}>Credits: {searchResult.credits}</p>
                     </div>
                   )}
                 </div>
@@ -250,7 +249,7 @@ export default function Search() {
 
             {/* Discussion Section */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4" style={{marginTop: "0rem", marginBottom:"-1rem"}}>
                 Discussion ({comments.length})
               </h2>
 
@@ -263,16 +262,17 @@ export default function Search() {
                       <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <p className="font-semibold text-gray-900">{comment.userName}</p>
-                            {comment.email && <p className="text-xs text-gray-500">{comment.email}</p>}
+                            <p className="font-semibold text-gray-900" style={{marginBottom: '-0.5rem'}}><b>Name:</b> {comment.userName}</p>
+                            {comment.email && <p className="text-xs text-gray-500" style={{marginBottom: '0rem', marginTop:'0.5rem'}}><b>Email:</b> {comment.email}</p>}
                           </div>
-                          <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                          <span className="text-xs text-gray-500" style={{marginBottom:'-1rem'}}><b>Date: </b>{formatDate(comment.createdAt)}</span>
                         </div>
-                        <p className="text-gray-700 mb-3">{comment.commentText}</p>
+                        <p className="text-gray-700 mb-3" style={{marginTop:'1rem', fontFamily:'Trebuchet MS'}}>{comment.commentText}</p>
                         {isLoggedIn && (
                           <button
                             onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
                             className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition"
+                            style={{border:'none', paddingLeft: '10px', paddingRight: '10px', paddingBottom: '3px', paddingTop: '3px' ,marginTop: '-0.5rem'}}
                           >
                             {replyingTo === comment._id ? 'Cancel Reply' : 'Reply'}
                           </button>
@@ -329,12 +329,12 @@ export default function Search() {
                             <div key={reply._id} className="bg-white rounded-lg shadow p-4 border-l-4 border-gray-400">
                               <div className="flex justify-between items-start mb-2">
                                 <div>
-                                  <p className="font-semibold text-gray-900">{reply.userName}</p>
-                                  {reply.email && <p className="text-xs text-gray-500">{reply.email}</p>}
+                                  <p className="font-semibold text-gray-900" style={{marginBottom: '0rem'}}><b>Name:</b> {reply.userName}</p>
+                                  {reply.email && <p className="text-xs text-gray-500" style={{marginBottom: '0rem', marginTop:'0rem'}}> <b>Email:</b> {reply.email}</p>}
                                 </div>
-                                <span className="text-xs text-gray-500">{formatDate(reply.createdAt)}</span>
+                                <span className="text-xs text-gray-500"><b>Date:</b> {formatDate(reply.createdAt)}</span>
                               </div>
-                              <p className="text-gray-700">{reply.replyText}</p>
+                              <p className="text-gray-700" style={{fontFamily:'Trebuchet MS'}}>{reply.replyText}</p>
                             </div>
                           ))}
                         </div>
