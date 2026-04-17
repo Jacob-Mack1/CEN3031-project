@@ -36,9 +36,6 @@ export default function Home() {
             <p>Find resources and communities on campus.</p>
           </div>
         </div>
-        <div className="bottom-image flex justify-center mt-8">
-          <img src={creatureImage} alt="Creature" />
-        </div>
       </main>
     </div>
   );

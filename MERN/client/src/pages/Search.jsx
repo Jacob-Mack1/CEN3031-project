@@ -182,7 +182,7 @@ export default function Search() {
           <Link to="/Dashboard" className="text-indigo-600 hover:text-indigo-700 font-medium mb-4 inline-block">
             ← Back to Dashboard
           </Link>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6" align="center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Search Courses</h1>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -218,12 +218,12 @@ export default function Search() {
         {searched && searchResult && !error && (
           <div className="space-y-6">
             {/* Course Post */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden" style={{backgroundColor:'lightblue'}}>
               <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white">
                 <h2 className="text-4xl font-bold mb-2">{searchResult.classCode}</h2>
                 <p className="text-indigo-100">{searchResult.courseName}</p>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4" style={{backgroundColor:'orange'}}>
                 {searchResult.description && (
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
@@ -258,7 +258,7 @@ export default function Search() {
               <div className="space-y-4 mb-6">
                 {comments.length > 0 ? (
                   comments.map((comment) => (
-                    <div key={comment._id} className="space-y-2">
+                    <div key={comment._id} className="space-y-2" style={{backgroundColor:'lightgreen'}}>
                       {/* Parent Comment */}
                       <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
                         <div className="flex justify-between items-start mb-2">
@@ -351,7 +351,7 @@ export default function Search() {
 
               {/* New Comment Form */}
               {isLoggedIn ? (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-6" style={{backgroundColor:'lightyellow'}}>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Your Comment</h3>
                   <form onSubmit={handleCommentSubmit} className="space-y-4">
                     <div>
