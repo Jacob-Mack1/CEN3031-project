@@ -16,6 +16,28 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/check-username/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+    const existing = await collection.findOne({ username: username.toLowerCase() });
+    res.json({ exists: !!existing });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to check username" });
+  }
+});
+
+router.get("/check-email/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    const existing = await collection.findOne({ email: email.toLowerCase() });
+    res.json({ exists: !!existing });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to check email" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -35,10 +57,10 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, position, level, email, password, anonymous } = req.body;
+    const { username, email, password, anonymous, avatar } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: "Name is required" });
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: "Username is required" });
     }
 
     if (!email || !email.trim()) {
@@ -49,24 +71,44 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Password is required" });
     }
 
+    // Check for existing username
+    const existingUsername = await collection.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username already taken" });
+    }
+
+    // Check for existing email
+    const existingEmail = await collection.findOne({ email: email.toLowerCase() });
+    if (existingEmail) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
     const hashedPassword = crypto.createHash("sha256").update(password).digest("hex");
 
     const newRecord = {
-      name: name,
-      position: position || "User",
-      level: level || "New",
-      email: email,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
       password: hashedPassword,
       anonymous: !!anonymous,
+      avatar: avatar || null,
       createdAt: new Date(),
     };
 
     const result = await collection.insertOne(newRecord);
     const created = await collection.findOne({ _id: result.insertedId });
-    res.status(201).json(created);
+    
+    res.status(201).json({ 
+      user: {
+        _id: created._id,
+        username: created.username,
+        email: created.email,
+        avatar: created.avatar,
+        anonymous: created.anonymous,
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create record" });
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Failed to create record: " + err.message });
   }
 });
 
@@ -98,8 +140,32 @@ router.patch("/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid record ID" });
     }
 
-    const updates = req.body;
+    const updates = { ...req.body };
     delete updates._id;
+
+    // Check for username uniqueness if updating username
+    if (updates.username) {
+      const existingUser = await collection.findOne({ 
+        username: updates.username.toLowerCase(),
+        _id: { $ne: new ObjectId(id) }
+      });
+      if (existingUser) {
+        return res.status(409).json({ error: "Username already taken" });
+      }
+      updates.username = updates.username.toLowerCase();
+    }
+
+    // Check for email uniqueness if updating email
+    if (updates.email) {
+      const existingEmail = await collection.findOne({ 
+        email: updates.email.toLowerCase(),
+        _id: { $ne: new ObjectId(id) }
+      });
+      if (existingEmail) {
+        return res.status(409).json({ error: "Email already registered" });
+      }
+      updates.email = updates.email.toLowerCase();
+    }
 
     const { modifiedCount } = await collection.updateOne(
       { _id: new ObjectId(id) },
@@ -111,10 +177,18 @@ router.patch("/:id", async (req, res) => {
     }
 
     const updated = await collection.findOne({ _id: new ObjectId(id) });
-    res.json(updated);
+    res.json({ 
+      user: {
+        _id: updated._id,
+        username: updated.username,
+        email: updated.email,
+        avatar: updated.avatar,
+        anonymous: updated.anonymous,
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update record" });
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Failed to update record: " + err.message });
   }
 });
 
