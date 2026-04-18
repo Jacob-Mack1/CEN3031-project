@@ -79,116 +79,149 @@ export default function AddCourse() {
   };
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-card">
-        <h1>Add a New Course</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="classCode" className="block text-sm font-medium text-gray-700">
-              Class Code *
-            </label>
-            <input
-              type="text"
-              id="classCode"
-              name="classCode"
-              value={formData.classCode}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="e.g., EEL4744"
-              maxLength="7"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              Format: 3 letters followed by 4 numbers
-            </p>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link to="/Dashboard" className="text-indigo-600 hover:text-indigo-700 font-medium mb-4 inline-block">
+            ← Back to Dashboard
+          </Link>
+          <div className="card" align="center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Add a New Course</h1>
+            <p className="text-gray-600 mb-4">Fill in the course details below to add it to the system.</p>
+            <p className="text-sm text-gray-500">Fields marked with * are required.</p>
           </div>
+        </div>
 
-          <div>
-            <label htmlFor="courseName" className="block text-sm font-medium text-gray-700">
-              Course Name *
-            </label>
-            <input
-              type="text"
-              id="courseName"
-              name="courseName"
-              value={formData.courseName}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="e.g., Embedded Systems"
-            />
-          </div>
+        {/* Form */}
+        <div className="card mt-12" align="center">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div className="text-center">
+                <label htmlFor="classCode" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                  Class Code*
+                </label>
+                <div>
+                  <input
+                    type="text"
+                    id="classCode"
+                    name="classCode"
+                    value={formData.classCode}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                    placeholder="EEL4744"
+                    maxLength="7"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Course description (optional)"
-              rows="3"
-            />
-          </div>
+              <div className="text-center">
+                <label htmlFor="courseName" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                  Course Name*
+                </label>
+                <div>
+                  <input
+                    type="text"
+                    id="courseName"
+                    name="courseName"
+                    value={formData.courseName}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                    placeholder="Microprocessor Applications"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label htmlFor="instructor" className="block text-sm font-medium text-gray-700">
-              Instructor
-            </label>
-            <input
-              type="text"
-              id="instructor"
-              name="instructor"
-              value={formData.instructor}
-              onChange={(e) => {
-                const { name, value } = e.target;
-                setFormData(prev => ({
-                  ...prev,
-                  [name]: value
-                }));
-                if (error) setError('');
-              }}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Instructor name (optional)"
-            />
-          </div>
+              <div className="text-center">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                  Description
+                </label>
+                <div>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                    placeholder="Course description (optional)"
+                    rows="4"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label htmlFor="credits" className="block text-sm font-medium text-gray-700">
-              Credits
-            </label>
-            <input
-              type="number"
-              id="credits"
-              name="credits"
-              value={formData.credits}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              min="1"
-              max="6"
-            />
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="text-center">
+                  <label htmlFor="instructor" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                    Instructor
+                  </label>
+                  <div>
+                    <input
+                      type="text"
+                      id="instructor"
+                      name="instructor"
+                      value={formData.instructor}
+                      onChange={(e) => {
+                        const { name, value } = e.target;
+                        setFormData(prev => ({
+                          ...prev,
+                          [name]: value
+                        }));
+                        if (error) setError('');
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                      placeholder="Instructor name (optional)"
+                    />
+                  </div>
+                </div>
 
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-          {success && <p className="mt-2 text-sm text-green-600">{success}</p>}
+                <div className="text-center">
+                  <label htmlFor="credits" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                    Credits
+                  </label>
+                  <div>
+                    <input
+                      type="number"
+                      id="credits"
+                      name="credits"
+                      value={formData.credits}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                      min="1"
+                      max="5"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Adding...' : 'Add Course'}
-            </button>
-            <Link
-              to="/Dashboard"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </Link>
-          </div>
-        </form>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-center">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-center">
+                {success}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Adding...' : 'Add Course'}
+              </button>
+              <Link
+                to="/Dashboard"
+                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-center"
+              >
+                Cancel
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
