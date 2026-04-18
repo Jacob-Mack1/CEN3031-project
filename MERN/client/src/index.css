@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom slider styles */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: #2563eb;
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-thumb:hover {
+  background: #2563eb;
+}
+
+.slider::-webkit-slider-track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.slider::-moz-range-track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  border: none;
+}
+
 /* Global styles */
 body {
   font-family: 'Arial', sans-serif;
@@ -102,6 +145,13 @@ body {
 
 .feature p {
   color: #666;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .footer {
