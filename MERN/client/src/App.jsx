@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
+import AccountSettings from './pages/AccountSettings';
 import Search from './pages/Search';
 import AddCourse from './pages/AddCourse';
 import Message from './pages/Message';
@@ -17,6 +18,7 @@ function App() {
       <Route path="/Login" element={<Login />} />
       <Route path="/SignUp" element={<SignUp />} />
       <Route path="/Dashboard" element={<Dashboard />} />
+      <Route path="/account-settings" element={<AccountSettings />} />
       <Route path="/search" element={<Search />} />
       <Route path="/add-course" element={<AddCourse />} />
       <Route path="/message" element={<Message />} />
