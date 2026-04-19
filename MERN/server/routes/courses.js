@@ -147,7 +147,7 @@ router.post("/:id/comments", async (req, res) => {
       return res.status(400).json({ error: "Invalid course ID" });
     }
 
-    const { userName, email, commentText } = req.body;
+    const { userName, email, commentText, avatar } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({ error: "User name is required" });
@@ -161,6 +161,7 @@ router.post("/:id/comments", async (req, res) => {
       _id: new ObjectId(),
       userName: userName.trim(),
       email: email || "",
+      avatar: avatar || "",
       commentText: commentText.trim(),
       replies: [],
       createdAt: new Date(),
@@ -212,7 +213,7 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
       return res.status(400).json({ error: "Invalid course or comment ID" });
     }
 
-    const { userName, email, replyText } = req.body;
+    const { userName, email, replyText, avatar } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({ error: "User name is required" });
@@ -226,7 +227,9 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
       _id: new ObjectId(),
       userName: userName.trim(),
       email: email || "",
+      avatar: avatar || "",
       replyText: replyText.trim(),
+      replies: [],
       createdAt: new Date(),
     };
 
@@ -240,10 +243,231 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
     }
 
     const updated = await collection.findOne({ _id: new ObjectId(courseId) });
+    console.log('Reply posted successfully, returning course with', updated.comments.length, 'comments');
     res.status(201).json(updated);
   } catch (err) {
-    console.error(err);
+    console.error('Error posting reply:', err);
     res.status(500).json({ error: "Failed to post reply" });
+  }
+});
+
+// Helper function to find and update a reply at any nesting depth
+function findAndAddReplyAtDepth(replies, replyId, newReply) {
+  if (!replies || !Array.isArray(replies)) {
+    return false;
+  }
+
+  for (let reply of replies) {
+    if (reply._id.toString() === replyId) {
+      if (!reply.replies) {
+        reply.replies = [];
+      }
+      reply.replies.push(newReply);
+      return true;
+    }
+    // Recursively search in nested replies
+    if (findAndAddReplyAtDepth(reply.replies, replyId, newReply)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Report a comment
+router.post("/:courseId/comments/:commentId/report", async (req, res) => {
+  try {
+    const { courseId, commentId } = req.params;
+    const { reason, reportedBy } = req.body;
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid course or comment ID" });
+    }
+
+    // Verify the course and comment exist
+    const course = await collection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const comment = course.comments.find(c => c._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Create the report
+    const reportsCollection = db.collection("reports");
+    const report = {
+      _id: new ObjectId(),
+      courseId: new ObjectId(courseId),
+      commentId: new ObjectId(commentId),
+      commentText: comment.commentText,
+      commentAuthor: comment.userName,
+      reason: reason || "No reason provided",
+      reportedBy: reportedBy || "Anonymous",
+      reportedAt: new Date(),
+      status: "pending", // pending, reviewed, resolved
+    };
+
+    const result = await reportsCollection.insertOne(report);
+    
+    console.log('Report created:', result.insertedId);
+    res.status(201).json({ 
+      success: true, 
+      message: "Report submitted successfully. Our moderators will review this.",
+      reportId: result.insertedId 
+    });
+  } catch (err) {
+    console.error('Error reporting comment:', err);
+    res.status(500).json({ error: "Failed to submit report" });
+  }
+});
+
+// Helper function to find a reply at any nesting depth
+function findReplyAtDepth(replies, replyId) {
+  if (!replies || !Array.isArray(replies)) {
+    return null;
+  }
+
+  for (let reply of replies) {
+    if (reply._id.toString() === replyId) {
+      return reply;
+    }
+    // Recursively search in nested replies
+    const found = findReplyAtDepth(reply.replies, replyId);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
+// Report a reply
+router.post("/:courseId/comments/:commentId/replies/:replyId/report", async (req, res) => {
+  try {
+    const { courseId, commentId, replyId } = req.params;
+    const { reason, reportedBy } = req.body;
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId) || !ObjectId.isValid(replyId)) {
+      return res.status(400).json({ error: "Invalid course, comment, or reply ID" });
+    }
+
+    // Verify the course and comment exist
+    const course = await collection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const comment = course.comments.find(c => c._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Find the reply at any depth
+    const reply = findReplyAtDepth(comment.replies, replyId);
+    if (!reply) {
+      return res.status(404).json({ error: "Reply not found" });
+    }
+
+    // Create the report
+    const reportsCollection = db.collection("reports");
+    const report = {
+      _id: new ObjectId(),
+      courseId: new ObjectId(courseId),
+      commentId: new ObjectId(commentId),
+      replyId: new ObjectId(replyId),
+      replyText: reply.replyText,
+      replyAuthor: reply.userName,
+      reason: reason || "No reason provided",
+      reportedBy: reportedBy || "Anonymous",
+      reportedAt: new Date(),
+      status: "pending",
+    };
+
+    const result = await reportsCollection.insertOne(report);
+    
+    console.log('Reply report created:', result.insertedId);
+    res.status(201).json({ 
+      success: true, 
+      message: "Report submitted successfully. Our moderators will review this.",
+      reportId: result.insertedId 
+    });
+  } catch (err) {
+    console.error('Error reporting reply:', err);
+    res.status(500).json({ error: "Failed to submit report" });
+  }
+});
+
+// Post a reply to a reply (nested reply) - supports unlimited nesting depth
+router.post("/:courseId/comments/:commentId/replies/:replyId", async (req, res) => {
+  try {
+    const { courseId, commentId, replyId } = req.params;
+    console.log('Nested reply request:', { courseId, commentId, replyId });
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId) || !ObjectId.isValid(replyId)) {
+      return res.status(400).json({ error: "Invalid course, comment, or reply ID" });
+    }
+
+    const { userName, email, replyText, avatar } = req.body;
+
+    if (!userName || !userName.trim()) {
+      return res.status(400).json({ error: "User name is required" });
+    }
+
+    if (!replyText || !replyText.trim()) {
+      return res.status(400).json({ error: "Reply text is required" });
+    }
+
+    // Fetch the course
+    const course = await collection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) {
+      console.log('Course not found:', courseId);
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    // Find the comment
+    const comment = course.comments.find(c => c._id.toString() === commentId);
+    if (!comment) {
+      console.log('Comment not found:', commentId);
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const nestedReply = {
+      _id: new ObjectId(),
+      userName: userName.trim(),
+      email: email || "",
+      avatar: avatar || "",
+      replyText: replyText.trim(),
+      replies: [],
+      createdAt: new Date(),
+    };
+
+    // Search for the reply at any depth and add the new reply to it
+    const found = findAndAddReplyAtDepth(comment.replies, replyId, nestedReply);
+
+    if (!found) {
+      console.log('Reply not found at any depth:', replyId);
+      return res.status(404).json({ error: "Course, comment, or reply not found" });
+    }
+
+    // Update the entire course with the modified comment
+    const { modifiedCount } = await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      { $set: { "comments.$": comment } }
+    );
+
+    if (modifiedCount === 0) {
+      console.log('Failed to update comment');
+      return res.status(404).json({ error: "Failed to update comment" });
+    }
+
+    const updated = await collection.findOne({ _id: new ObjectId(courseId) });
+    console.log('Nested reply posted successfully, returning course with', updated.comments.length, 'comments');
+    res.status(201).json(updated);
+  } catch (err) {
+    console.error('Error posting nested reply:', err);
+    res.status(500).json({ error: "Failed to post nested reply" });
   }
 });
 

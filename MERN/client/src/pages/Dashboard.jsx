@@ -6,6 +6,8 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [followedCourses, setFollowedCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [messages, setMessages] = useState([
     { id: 1, sender: 'Dr. Smith', text: 'Great work on your last assignment!' },
     { id: 2, sender: 'Study Group', text: 'Meeting at 3pm today?' },
@@ -16,22 +18,73 @@ export default function Dashboard() {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        // Fetch followed courses from backend using user ID
+        if (parsedUser._id) {
+          fetchFollowedCourses(parsedUser._id);
+        }
       } catch (err) {
         console.error('Error parsing user data:', err);
+        setError('Failed to load user data');
+        setLoading(false);
       }
+    } else {
+      // No user logged in, redirect to login
+      navigate('/Login');
+      setLoading(false);
     }
-    
-    // Load followed courses from localStorage
-    const savedFollowed = localStorage.getItem('followedCourses');
-    if (savedFollowed) {
-      try {
-        setFollowedCourses(JSON.parse(savedFollowed));
-      } catch (err) {
-        console.error('Error loading followed courses:', err);
+  }, [navigate]);
+
+  // Refresh followed courses when page comes into focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && user._id) {
+        fetchFollowedCourses(user._id);
       }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
+  const fetchFollowedCourses = async (userId) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5050/record/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const userData = await response.json();
+      
+      // Update user data with latest from server
+      setUser(userData);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      
+      // Set followed courses from server
+      const courses = userData.followedCourses || [];
+      setFollowedCourses(courses);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching followed courses:', err);
+      setError('Failed to load followed courses');
+      
+      // Fallback to localStorage if fetch fails
+      const savedFollowed = localStorage.getItem('followedCourses');
+      if (savedFollowed) {
+        try {
+          setFollowedCourses(JSON.parse(savedFollowed));
+        } catch (parseErr) {
+          console.error('Error loading fallback courses:', parseErr);
+        }
+      }
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   const handleSignOut = () => {
     localStorage.removeItem('gatorlinkLoggedIn');
@@ -39,10 +92,36 @@ export default function Dashboard() {
     navigate('/');
   };
 
-  const handleRemoveCourse = (courseId) => {
-    const updated = followedCourses.filter(course => course._id !== courseId);
-    setFollowedCourses(updated);
-    localStorage.setItem('followedCourses', JSON.stringify(updated));
+  const handleRemoveCourse = async (courseId) => {
+    try {
+      // Call backend to unfollow the course
+      const response = await fetch(`http://localhost:5050/record/${user._id}/follow-course`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          courseId: courseId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove course');
+      }
+
+      const data = await response.json();
+      
+      // Update user and followed courses from server response
+      setUser(data.user);
+      setFollowedCourses(data.user.followedCourses || []);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+    } catch (err) {
+      console.error('Error removing course:', err);
+      setError('Failed to remove course. Please try again.');
+      
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const handleCourseClick = (courseId) => {
@@ -116,7 +195,19 @@ export default function Dashboard() {
           <h2>MY FOLLOWED COURSES</h2>
         </div>
 
-        {followedCourses.length === 0 ? (
+        {error && (
+          <div className="blocky-card p-4" style={{ borderColor: '#ef4444', backgroundColor: '#fef2f2', marginBottom: '16px' }}>
+            <p style={{ color: '#ef4444', margin: 0 }}>
+              ⚠️ {error}
+            </p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="empty-state-card blocky-card">
+            <p style={{ marginTop: '16px' }}>Loading your courses...</p>
+          </div>
+        ) : followedCourses.length === 0 ? (
           <div className="empty-state-card blocky-card">
             <div className="empty-state-icon">📚</div>
             <h3 className="empty-state-title">No Courses Yet!</h3>
