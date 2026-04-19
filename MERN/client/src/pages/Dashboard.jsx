@@ -22,27 +22,16 @@ export default function Dashboard() {
       }
     }
     
-    // Fetch followed courses from backend
-    const fetchFollowedCourses = async () => {
+    // Load followed courses from localStorage
+    const savedFollowed = localStorage.getItem('followedCourses');
+    if (savedFollowed) {
       try {
-        const userId = user?._id;
-        if (!userId) return;
-        
-        // TODO: Replace with actual backend endpoint when course system is implemented
-        // const response = await fetch(`http://localhost:5050/courses/followed/${userId}`);
-        // const data = await response.json();
-        // setFollowedCourses(data);
-        
-        // For now, initialize as empty
-        setFollowedCourses([]);
+        setFollowedCourses(JSON.parse(savedFollowed));
       } catch (err) {
-        console.error('Error fetching followed courses:', err);
-        setFollowedCourses([]);
+        console.error('Error loading followed courses:', err);
       }
-    };
-    
-    fetchFollowedCourses();
-  }, [user]);
+    }
+  }, []);
 
   const handleSignOut = () => {
     localStorage.removeItem('gatorlinkLoggedIn');
@@ -50,12 +39,14 @@ export default function Dashboard() {
     navigate('/');
   };
 
-  const toggleCourseFollow = (courseId) => {
-    setFollowedCourses(
-      followedCourses.map((course) =>
-        course.id === courseId ? { ...course, followed: !course.followed } : course
-      )
-    );
+  const handleRemoveCourse = (courseId) => {
+    const updated = followedCourses.filter(course => course._id !== courseId);
+    setFollowedCourses(updated);
+    localStorage.setItem('followedCourses', JSON.stringify(updated));
+  };
+
+  const handleCourseClick = (courseId) => {
+    navigate(`/course/${courseId}`);
   };
 
   const toggleMessenger = () => {
@@ -143,18 +134,22 @@ export default function Dashboard() {
         ) : (
           <div className="courses-grid">
             {followedCourses.map((course) => (
-              <div key={course.id} className="course-card blocky-card">
-                <div className="course-info">
-                  <h3 className="course-name">{course.name}</h3>
-                  <p className="course-instructor">Instructor: {course.instructor}</p>
+              <div key={course._id} className="course-card blocky-card">
+                <div
+                  className="course-info"
+                  style={{ cursor: 'pointer', flex: 1 }}
+                  onClick={() => handleCourseClick(course._id)}
+                >
+                  <h3 className="course-name">{course.classCode}</h3>
+                  <p className="course-instructor">{course.courseName}</p>
                 </div>
                 <button
-                  className={`follow-button blocky-button ${
-                    course.followed ? 'blocky-button-success' : 'blocky-button-secondary'
-                  }`}
-                  onClick={() => toggleCourseFollow(course.id)}
+                  className="blocky-button blocky-button-secondary"
+                  onClick={() => handleRemoveCourse(course._id)}
+                  title="Remove course from followed"
+                  style={{ padding: '12px 16px', fontSize: '12px' }}
                 >
-                  {course.followed ? '✓ FOLLOWING' : 'FOLLOW'}
+                  × REMOVE
                 </button>
               </div>
             ))}
