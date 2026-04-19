@@ -1,18 +1,13 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import MessagingSystem from './MessagingSystem';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [followedCourses, setFollowedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'Dr. Smith', text: 'Great work on your last assignment!' },
-    { id: 2, sender: 'Study Group', text: 'Meeting at 3pm today?' },
-    { id: 3, sender: 'Prof. Johnson', text: 'Your project submission was excellent.' },
-  ]);
 
   useEffect(() => {
     const userData = localStorage.getItem('currentUser');
@@ -126,10 +121,6 @@ export default function Dashboard() {
 
   const handleCourseClick = (courseId) => {
     navigate(`/course/${courseId}`);
-  };
-
-  const toggleMessenger = () => {
-    setIsMessengerOpen(!isMessengerOpen);
   };
 
   return (
@@ -248,41 +239,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Mini-Messenger Widget */}
-      <div className={`messenger-widget ${isMessengerOpen ? 'messenger-expanded' : 'messenger-collapsed'}`}>
-        {isMessengerOpen ? (
-          <>
-            <div className="messenger-header">
-              <h3>MESSAGES</h3>
-              <button className="messenger-close-btn" onClick={toggleMessenger}>
-                ✕
-              </button>
-            </div>
-            <div className="messenger-content">
-              {messages.map((msg) => (
-                <div key={msg.id} className="message-item">
-                  <p className="message-sender">{msg.sender}</p>
-                  <p className="message-text">{msg.text}</p>
-                </div>
-              ))}
-            </div>
-            <div className="messenger-input-container">
-              <input
-                type="text"
-                className="messenger-input slot-input"
-                placeholder="Type a message..."
-              />
-              <button className="messenger-send-btn blocky-button blocky-button-primary">
-                SEND
-              </button>
-            </div>
-          </>
-        ) : (
-          <button className="messenger-toggle-btn" onClick={toggleMessenger} title="Open messages">
-            💬
-          </button>
-        )}
-      </div>
+      {/* Floating Messaging System */}
+      <MessagingSystem user={user} />
     </div>
   );
 }
