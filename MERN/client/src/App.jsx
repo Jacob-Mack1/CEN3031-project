@@ -7,6 +7,7 @@ import AccountSettings from './pages/AccountSettings';
 import Search from './pages/Search';
 import AddCourse from './pages/AddCourse';
 import Message from './pages/Message';
+import CourseDetails from './pages/CourseDetails';
 import RecordList from './components/RecordList';
 import Record from './components/Record';
 
@@ -22,6 +23,7 @@ function App() {
       <Route path="/search" element={<Search />} />
       <Route path="/add-course" element={<AddCourse />} />
       <Route path="/message" element={<Message />} />
+      <Route path="/course/:courseId" element={<CourseDetails />} />
       <Route path="/records" element={<RecordList />} />
       <Route path="/edit/:id" element={<Record />} />
       <Route path="/create" element={<Record />} />
