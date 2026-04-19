@@ -147,7 +147,7 @@ router.post("/:id/comments", async (req, res) => {
       return res.status(400).json({ error: "Invalid course ID" });
     }
 
-    const { userName, email, commentText, avatar } = req.body;
+    const { userName, email, commentText, avatar, anonymous } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({ error: "User name is required" });
@@ -162,6 +162,7 @@ router.post("/:id/comments", async (req, res) => {
       userName: userName.trim(),
       email: email || "",
       avatar: avatar || "",
+      anonymous: anonymous || false,
       commentText: commentText.trim(),
       replies: [],
       createdAt: new Date(),
@@ -213,7 +214,7 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
       return res.status(400).json({ error: "Invalid course or comment ID" });
     }
 
-    const { userName, email, replyText, avatar } = req.body;
+    const { userName, email, replyText, avatar, anonymous } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({ error: "User name is required" });
@@ -228,6 +229,7 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
       userName: userName.trim(),
       email: email || "",
       avatar: avatar || "",
+      anonymous: anonymous || false,
       replyText: replyText.trim(),
       replies: [],
       createdAt: new Date(),
@@ -409,7 +411,7 @@ router.post("/:courseId/comments/:commentId/replies/:replyId", async (req, res) 
       return res.status(400).json({ error: "Invalid course, comment, or reply ID" });
     }
 
-    const { userName, email, replyText, avatar } = req.body;
+    const { userName, email, replyText, avatar, anonymous } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({ error: "User name is required" });
@@ -438,6 +440,7 @@ router.post("/:courseId/comments/:commentId/replies/:replyId", async (req, res) 
       userName: userName.trim(),
       email: email || "",
       avatar: avatar || "",
+      anonymous: anonymous || false,
       replyText: replyText.trim(),
       replies: [],
       createdAt: new Date(),

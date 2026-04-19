@@ -117,6 +117,7 @@ export default function Search() {
           userName: currentUser.displayName || currentUser.username,
           email: currentUser.email || '',
           avatar: currentUser.avatar || '',
+          anonymous: currentUser.anonymous || false,
           commentText: newCommentData.commentText.trim(),
         }),
       });
@@ -188,6 +189,7 @@ export default function Search() {
             userName: currentUser.displayName || currentUser.username,
             email: currentUser.email || '',
             avatar: currentUser.avatar || '',
+            anonymous: currentUser.anonymous || false,
             replyText: replyData[replyKey].trim(),
           }),
         }
@@ -261,6 +263,7 @@ export default function Search() {
             userName: currentUser.displayName || currentUser.username,
             email: currentUser.email || '',
             avatar: currentUser.avatar || '',
+            anonymous: currentUser.anonymous || false,
             replyText: replyData[replyKey].trim(),
           }),
         }
@@ -480,7 +483,7 @@ export default function Search() {
                         fontSize: '14px'
                       }}
                     >
-                      {reply.userName.charAt(0).toUpperCase()}
+                      {reply.anonymous ? 'A' : reply.userName.charAt(0).toUpperCase()}
                     </div>
                   </div>
 
@@ -488,7 +491,7 @@ export default function Search() {
                   <div className="flex-grow">
                     <div className="flex justify-between items-start mb-1">
                       <div>
-                        <p className="font-semibold text-gray-900">{reply.userName}</p>
+                        <p className="font-semibold text-gray-900">{reply.anonymous ? 'Anonymous' : reply.userName}</p>
                         <button
                           onClick={() => setReportingData({ type: 'reply', commentId, replyId: reply._id })}
                           className="text-xs text-gray-600 hover:text-red-700 font-medium transition mt-1 px-2 py-1 rounded border border-gray-300 hover:border-red-500 bg-white"
@@ -729,7 +732,7 @@ export default function Search() {
                                 fontSize: '14px'
                               }}
                             >
-                              {comment.userName.charAt(0).toUpperCase()}
+                              {comment.anonymous ? 'A' : comment.userName.charAt(0).toUpperCase()}
                             </div>
                           </div>
 
@@ -737,7 +740,7 @@ export default function Search() {
                           <div className="flex-grow">
                             <div className="flex justify-between items-start mb-1">
                               <div>
-                                <p className="font-semibold text-gray-900">{comment.userName}</p>
+                                <p className="font-semibold text-gray-900">{comment.anonymous ? 'Anonymous' : comment.userName}</p>
                                 <button
                                   onClick={() => setReportingData({ type: 'comment', commentId: comment._id })}
                                   className="text-xs text-gray-600 hover:text-red-700 font-medium transition mt-1 px-2 py-1 rounded border border-gray-300 hover:border-red-500 bg-white"
