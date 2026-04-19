@@ -71,6 +71,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Password is required" });
     }
 
+    // Validate avatar size (max 5MB)
+    if (avatar && typeof avatar === 'string' && avatar.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: "Avatar image is too large. Maximum size is 5MB." });
+    }
+
     // Check for existing username
     const existingUsername = await collection.findOne({ username: username.toLowerCase() });
     if (existingUsername) {
@@ -91,6 +96,7 @@ router.post("/", async (req, res) => {
       password: hashedPassword,
       anonymous: !!anonymous,
       avatar: avatar || null,
+      followedCourses: [],
       createdAt: new Date(),
     };
 
@@ -104,6 +110,7 @@ router.post("/", async (req, res) => {
         email: created.email,
         avatar: created.avatar,
         anonymous: created.anonymous,
+        followedCourses: created.followedCourses || [],
       }
     });
   } catch (err) {
@@ -126,13 +133,87 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    res.json({ message: "Login successful", user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ message: "Login successful", user: { _id: user._id, username: user.username, email: user.email, avatar: user.avatar, anonymous: user.anonymous, followedCourses: user.followedCourses || [] } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login failed" });
   }
 });
+// Toggle follow status for a course
+router.post("/:userId/follow-course", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { courseId, courseData } = req.body;
 
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    if (!courseId) {
+      return res.status(400).json({ error: "Course ID is required" });
+    }
+
+    const user = await collection.findOne({ _id: new ObjectId(userId) });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if course is already followed
+    const courseIdStr = courseId.toString();
+    const isFollowed = user.followedCourses && user.followedCourses.some(course => {
+      const storedIdStr = course._id ? course._id.toString() : '';
+      return storedIdStr === courseIdStr;
+    });
+    
+    let updatedUser;
+    if (isFollowed) {
+      // Remove from followed courses
+      updatedUser = await collection.findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        { $pull: { followedCourses: { _id: new ObjectId(courseId) } } },
+        { returnDocument: "after" }
+      );
+    } else {
+      // Add to followed courses - ensure courseId is properly set
+      const courseToAdd = {
+        ...courseData,
+        _id: new ObjectId(courseId)
+      };
+      updatedUser = await collection.findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        { $push: { followedCourses: courseToAdd } },
+        { returnDocument: "after" }
+      );
+    }
+
+    if (!updatedUser) {
+      console.error('Failed to update user - updatedUser is null:', { userId, courseId });
+      return res.status(500).json({ error: "Failed to update user" });
+    }
+
+    // Handle both MongoDB driver responses - some versions return { value }, others return the document directly
+    const userDoc = updatedUser.value || updatedUser;
+    
+    if (!userDoc || !userDoc._id) {
+      console.error('Failed to extract user document:', { userId, courseId, updatedUser, userDoc });
+      return res.status(500).json({ error: "Failed to update user" });
+    }
+
+    res.json({ 
+      user: {
+        _id: userDoc._id,
+        username: userDoc.username,
+        email: userDoc.email,
+        avatar: userDoc.avatar,
+        anonymous: userDoc.anonymous,
+        followedCourses: userDoc.followedCourses || [],
+      }
+    });
+  } catch (err) {
+    console.error('Error in follow-course endpoint:', err);
+    res.status(500).json({ error: "Failed to toggle follow status" });
+  }
+});
 router.patch("/:id", async (req, res) => {
   try {
     const id = req.params.id;

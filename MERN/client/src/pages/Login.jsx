@@ -56,17 +56,28 @@ export default function Login() {
           body: JSON.stringify({ email: formData.email.trim(), password: formData.password }),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          setErrors({ form: errorData.error || "Invalid login" });
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          console.error("Failed to parse response as JSON:", parseErr);
+          setErrors({ form: "Server error: Invalid response format. Please try again." });
           return;
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+          setErrors({ form: data.error || "Invalid login" });
+          return;
+        }
+
         console.log("Login success:", data);
 
         localStorage.setItem("gatorlinkLoggedIn", "true");
-        navigate("/Dashboard");
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+        setSubmitted(true);
+        setTimeout(() => {
+          navigate("/Dashboard");
+        }, 1000);
       } catch (error) {
         console.error(error);
         setErrors({ form: "Unable to login at this time. Try again." });

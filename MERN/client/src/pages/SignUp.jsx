@@ -123,12 +123,26 @@ export default function SignUp() {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          avatar: "Image must be smaller than 5MB",
+        }));
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData((prev) => ({
           ...prev,
           avatar: file,
           avatarPreview: reader.result,
+        }));
+        // Clear error when a valid file is selected
+        setFieldErrors((prev) => ({
+          ...prev,
+          avatar: "",
         }));
       };
       reader.readAsDataURL(file);
@@ -139,12 +153,26 @@ export default function SignUp() {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          avatar: "Image must be smaller than 5MB",
+        }));
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData((prev) => ({
           ...prev,
           avatar: file,
           avatarPreview: reader.result,
+        }));
+        // Clear error when a valid file is selected
+        setFieldErrors((prev) => ({
+          ...prev,
+          avatar: "",
         }));
       };
       reader.readAsDataURL(file);
@@ -248,13 +276,23 @@ export default function SignUp() {
 
       console.log("Signup response status:", response.status);
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        console.error("Failed to parse response as JSON:", parseErr);
+        setError("Server error: Invalid response format. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       console.log("Signup response data:", data);
 
       if (!response.ok) {
         const errorMsg = data.error || `Server error: ${response.status}`;
         console.error("Signup failed:", errorMsg);
         setError(errorMsg);
+        setLoading(false);
         return;
       }
 
@@ -471,6 +509,11 @@ export default function SignUp() {
                   <p className="mt-3 text-xs font-semibold" style={{ color: "#999" }}>
                     OPTIONAL - JPG, PNG, GIF
                   </p>
+                  {fieldErrors.avatar && (
+                    <p className="mt-3 text-sm font-semibold" style={{ color: "var(--color-error-500)" }}>
+                      ✗ {fieldErrors.avatar}
+                    </p>
+                  )}
                 </>
               )}
 
