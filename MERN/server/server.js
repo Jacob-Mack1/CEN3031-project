@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import records from "./routes/record.js";
 import courses from "./routes/courses.js";
+import messages from "./routes/messages.js";
 import dotenv from "dotenv";
 dotenv.config({ path: "./config.env" });
 
@@ -13,6 +14,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/record", records);
 app.use("/courses", courses);
+app.use("/messages", messages);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
