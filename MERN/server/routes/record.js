@@ -1,13 +1,17 @@
 import express from "express";
 import { ObjectId } from "mongodb";
 import crypto from "crypto";
-import db from "../db/connection.js";
+import { getCollection } from "../db/connection.js";
 
 const router = express.Router();
-const collection = db.collection("records");
+
+async function col() {
+  return getCollection("records");
+}
 
 router.get("/", async (req, res) => {
   try {
+    const collection = await col();
     const records = await collection.find({}).toArray();
     res.json(records);
   } catch (err) {
@@ -18,6 +22,7 @@ router.get("/", async (req, res) => {
 
 router.get("/check-username/:username", async (req, res) => {
   try {
+    const collection = await col();
     const { username } = req.params;
     const existing = await collection.findOne({ username: username.toLowerCase() });
     res.json({ exists: !!existing });
@@ -29,6 +34,7 @@ router.get("/check-username/:username", async (req, res) => {
 
 router.get("/check-email/:email", async (req, res) => {
   try {
+    const collection = await col();
     const { email } = req.params;
     const existing = await collection.findOne({ email: email.toLowerCase() });
     res.json({ exists: !!existing });
@@ -40,6 +46,7 @@ router.get("/check-email/:email", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
+    const collection = await col();
     const id = req.params.id;
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid record ID" });
@@ -57,6 +64,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    const collection = await col();
     const { username, email, password, anonymous, avatar } = req.body;
 
     if (!username || !username.trim()) {
@@ -121,6 +129,7 @@ router.post("/", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
+    const collection = await col();
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
@@ -142,6 +151,7 @@ router.post("/login", async (req, res) => {
 // Toggle follow status for a course
 router.post("/:userId/follow-course", async (req, res) => {
   try {
+    const collection = await col();
     const { userId } = req.params;
     const { courseId, courseData } = req.body;
 
@@ -216,6 +226,7 @@ router.post("/:userId/follow-course", async (req, res) => {
 });
 router.patch("/:id", async (req, res) => {
   try {
+    const collection = await col();
     const id = req.params.id;
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid record ID" });
@@ -275,6 +286,7 @@ router.patch("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
+    const collection = await col();
     const id = req.params.id;
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid record ID" });
