@@ -204,17 +204,20 @@ export default function AddCourse() {
 
               {currentStep === 1 && (
                 <>
-                  <input
-                    type="text"
-                    id="classCode"
-                    value={formData.classCode}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    className="slot-input w-full"
-                    placeholder="[CLASS CODE]"
-                    maxLength="7"
-                    autoFocus
-                  />
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                    <input
+                      type="text"
+                      id="classCode"
+                      value={formData.classCode}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      className="slot-input"
+                      placeholder="[CLASS CODE]"
+                      maxLength="7"
+                      autoFocus
+                      style={{ maxWidth: '300px' }}
+                    />
+                  </div>
                   {fieldErrors.classCode ? (
                     <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--color-error-500)' }}>
                       ✗ {fieldErrors.classCode}
@@ -339,16 +342,13 @@ export default function AddCourse() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex gap-4 justify-center items-center pt-8 w-full">
-              {currentStep > 1 ? (
-                <button
-                  type="button"
-                  onClick={handlePreviousStep}
-                  className="blocky-button blocky-button-secondary"
-                >
-                  ← BACK
-                </button>
-              ) : null}
+            <div className="flex gap-4 justify-between items-center pt-8 w-full">
+              <Link
+                to="/Dashboard"
+                className="blocky-button blocky-button-secondary flex items-center justify-center"
+              >
+                CANCEL
+              </Link>
 
               {currentStep < steps.length ? (
                 <button
@@ -359,21 +359,13 @@ export default function AddCourse() {
                   NEXT →
                 </button>
               ) : (
-                <div className="flex gap-4">
-                  <Link
-                    to="/Dashboard"
-                    className="blocky-button blocky-button-secondary flex items-center justify-center"
-                  >
-                    CANCEL
-                  </Link>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="blocky-button blocky-button-success"
-                  >
-                    {loading ? '⏳ SUBMITTING...' : '⚡ SUBMIT'}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="blocky-button blocky-button-success"
+                >
+                  {loading ? '⏳ SUBMITTING...' : '⚡ SUBMIT'}
+                </button>
               )}
             </div>
           </form>
