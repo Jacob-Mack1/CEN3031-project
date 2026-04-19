@@ -42,9 +42,6 @@ export default function Message() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Messages</h1>
-          <Link className="text-blue-600 hover:text-blue-800 font-medium" to="/Dashboard">
-            ← Back to Dashboard
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -158,6 +155,15 @@ export default function Message() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Back Button */}
+        <div className="mt-8">
+          <Link to="/Dashboard">
+            <button className="w-full blocky-button blocky-button-secondary" style={{ maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}>
+              ← BACK TO DASHBOARD
+            </button>
+          </Link>
         </div>
       </div>
     </div>
