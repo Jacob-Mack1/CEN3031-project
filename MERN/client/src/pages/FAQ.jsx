@@ -8,6 +8,14 @@ export default function FAQ() {
     {
       header: 'What are Anonymous Accounts?',
       body: 'Anonymous accounts cannot utilize the private messaging system, and their names do not appear when they make posts on the forum.'
+    },
+    {
+      header: 'What are the guidelines for messaging and reporting?',
+      body: 'When using our messaging and forum features, please maintain respectful and professional communication. All messages and posts should be free of harassment, hate speech, spam, or discriminatory content. If you encounter inappropriate content, use the report function to flag it for moderator review. Reports should include a clear reason for the flag. Our moderation team reviews reported content and takes appropriate action to maintain a safe community environment. Misuse of the reporting system is taken seriously and may result in account restrictions.'
+    },
+    {
+      header: 'How do I post class advice?',
+      body: 'To post class advice, navigate to the course page for the class you want to discuss. Click on the "Post Comment" button and share your advice or experience. Your post can include tips on studying, course content explanations, time management strategies, or other helpful insights. You have the option to post anonymously if you prefer. Remember to keep your advice constructive, respectful, and relevant to the course. Other students can reply to your advice and engage in discussions, creating a collaborative learning environment.'
     }
   ];
 
@@ -31,7 +39,7 @@ export default function FAQ() {
 
         <div className="accordion">
           {faqItems.map((item, index) => (
-            <div key={index} className="accordion-item">
+            <div key={index} className="accordion-item" style={{marginTop:'1rem'}}>
               <button
                 className="accordion-header"
                 onClick={() => toggleAccordion(index)}

@@ -67,6 +67,16 @@ async function removeQueueEntry(reportsCollection, source, ids) {
   await reportsCollection.deleteOne(query);
 }
 
+async function saveResolvedReport(report, action, moderatorUserId) {
+  const resolvedCollection = await getCollection("resolvedReports");
+  await resolvedCollection.insertOne({
+    ...report,
+    action: action, // "unflagged" or "deleted"
+    resolvedBy: moderatorUserId,
+    resolvedAt: new Date(),
+  });
+}
+
 router.get("/queue/:moderatorUserId", async (req, res) => {
   try {
     const { moderatorUserId } = req.params;
@@ -81,6 +91,23 @@ router.get("/queue/:moderatorUserId", async (req, res) => {
   } catch (err) {
     console.error("Error fetching moderation queue:", err);
     res.status(500).json({ error: "Failed to fetch moderation queue" });
+  }
+});
+
+router.get("/resolved/:moderatorUserId", async (req, res) => {
+  try {
+    const { moderatorUserId } = req.params;
+    const moderator = await requireModerator(moderatorUserId);
+    if (!moderator) {
+      return res.status(403).json({ error: "Moderator access required" });
+    }
+
+    const resolvedCollection = await getCollection("resolvedReports");
+    const resolved = await resolvedCollection.find({}).sort({ resolvedAt: -1 }).limit(50).toArray();
+    res.json(resolved);
+  } catch (err) {
+    console.error("Error fetching resolved reports:", err);
+    res.status(500).json({ error: "Failed to fetch resolved reports" });
   }
 });
 
@@ -116,6 +143,11 @@ router.post("/unflag", async (req, res) => {
         return res.status(404).json({ error: "Message not found" });
       }
 
+      const report = await reportsCollection.findOne({ source: "dm", messageId: messageId.toString() });
+      if (report) {
+        await saveResolvedReport(report, "unflagged", moderatorUserId);
+      }
+
       await removeQueueEntry(reportsCollection, source, { messageId });
       return res.json({ success: true });
     }
@@ -141,6 +173,11 @@ router.post("/unflag", async (req, res) => {
 
       if (result.matchedCount === 0) {
         return res.status(404).json({ error: "Comment not found" });
+      }
+
+      const report = await reportsCollection.findOne({ source: "forum-comment", courseId, commentId });
+      if (report) {
+        await saveResolvedReport(report, "unflagged", moderatorUserId);
       }
 
       await removeQueueEntry(reportsCollection, source, { courseId, commentId });
@@ -177,6 +214,11 @@ router.post("/unflag", async (req, res) => {
         { $set: { "comments.$": comment } }
       );
 
+      const report = await reportsCollection.findOne({ source: "forum-reply", courseId, commentId, replyId });
+      if (report) {
+        await saveResolvedReport(report, "unflagged", moderatorUserId);
+      }
+
       await removeQueueEntry(reportsCollection, source, { courseId, commentId, replyId });
       return res.json({ success: true });
     }
@@ -209,6 +251,11 @@ router.post("/delete", async (req, res) => {
         return res.status(404).json({ error: "Message not found" });
       }
 
+      const report = await reportsCollection.findOne({ source: "dm", messageId: messageId.toString() });
+      if (report) {
+        await saveResolvedReport(report, "deleted", moderatorUserId);
+      }
+
       await removeQueueEntry(reportsCollection, source, { messageId });
       return res.json({ success: true });
     }
@@ -227,6 +274,11 @@ router.post("/delete", async (req, res) => {
 
       if (result.modifiedCount === 0) {
         return res.status(404).json({ error: "Comment not found" });
+      }
+
+      const report = await reportsCollection.findOne({ source: "forum-comment", courseId, commentId });
+      if (report) {
+        await saveResolvedReport(report, "deleted", moderatorUserId);
       }
 
       await removeQueueEntry(reportsCollection, source, { courseId, commentId });
@@ -257,6 +309,11 @@ router.post("/delete", async (req, res) => {
         { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
         { $set: { "comments.$": comment } }
       );
+
+      const report = await reportsCollection.findOne({ source: "forum-reply", courseId, commentId, replyId });
+      if (report) {
+        await saveResolvedReport(report, "deleted", moderatorUserId);
+      }
 
       await removeQueueEntry(reportsCollection, source, { courseId, commentId, replyId });
       return res.json({ success: true });
