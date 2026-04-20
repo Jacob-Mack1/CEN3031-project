@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function FAQ() {
   const [expandedIndex, setExpandedIndex] = useState(null);
@@ -19,6 +20,14 @@ export default function FAQ() {
       <div className="faq-container">
         <h1 className="faq-title">Frequently Asked Questions</h1>
         <p className="faq-subtitle">Find answers to common questions about our platform</p>
+        
+        <div className="mt-8">
+          <Link to="/Dashboard">
+            <button className="w-full blocky-button blocky-button-secondary" style={{ maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}>
+              ← BACK TO DASHBOARD
+            </button>
+          </Link>
+        </div>
 
         <div className="accordion">
           {faqItems.map((item, index) => (
