@@ -110,6 +110,36 @@ export default function AccountSettings() {
     }
   };
 
+  const handleMakeModerator = async () => {
+    if (!user?._id) return;
+
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(`http://localhost:5050/record/${user._id}/make-moderator`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Failed to assign moderator role");
+        return;
+      }
+
+      const updatedUser = { ...user, ...data.user, isModerator: true };
+      setUser(updatedUser);
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      setSuccess("Moderator role enabled for this account.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to assign moderator role.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: "100vh" }}>
@@ -211,6 +241,17 @@ export default function AccountSettings() {
                 className="slot-input w-full"
                 placeholder="[EMAIL ADDRESS]"
               />
+            </div>
+
+            <div>
+              <button
+                type="button"
+                disabled={loading || user?.isModerator}
+                className="blocky-button blocky-button-primary"
+                onClick={handleMakeModerator}
+              >
+                {user?.isModerator ? "✓ MODERATOR ENABLED" : "MAKE ME MODERATOR"}
+              </button>
             </div>
 
             {/* Error Alert */}

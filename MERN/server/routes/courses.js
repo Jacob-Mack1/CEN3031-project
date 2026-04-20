@@ -165,6 +165,10 @@ router.post("/:id/comments", async (req, res) => {
       anonymous: anonymous || false,
       commentText: commentText.trim(),
       replies: [],
+      flagged: false,
+      flaggedAt: null,
+      reportReason: null,
+      reportedBy: null,
       createdAt: new Date(),
     };
 
@@ -232,6 +236,10 @@ router.post("/:courseId/comments/:commentId/replies", async (req, res) => {
       anonymous: anonymous || false,
       replyText: replyText.trim(),
       replies: [],
+      flagged: false,
+      flaggedAt: null,
+      reportReason: null,
+      reportedBy: null,
       createdAt: new Date(),
     };
 
@@ -297,27 +305,48 @@ router.post("/:courseId/comments/:commentId/report", async (req, res) => {
       return res.status(404).json({ error: "Comment not found" });
     }
 
-    // Create the report
-    const reportsCollection = db.collection("reports");
-    const report = {
-      _id: new ObjectId(),
-      courseId: new ObjectId(courseId),
-      commentId: new ObjectId(commentId),
-      commentText: comment.commentText,
-      commentAuthor: comment.userName,
-      reason: reason || "No reason provided",
-      reportedBy: reportedBy || "Anonymous",
-      reportedAt: new Date(),
-      status: "pending", // pending, reviewed, resolved
-    };
+    await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      {
+        $set: {
+          "comments.$.flagged": true,
+          "comments.$.flaggedAt": new Date(),
+          "comments.$.reportReason": reason?.trim() || "No reason provided",
+          "comments.$.reportedBy": reportedBy || "Anonymous",
+        },
+      }
+    );
 
-    const result = await reportsCollection.insertOne(report);
-    
-    console.log('Report created:', result.insertedId);
+    const moderationReports = db.collection("moderationReports");
+    await moderationReports.updateOne(
+      {
+        source: "forum-comment",
+        courseId,
+        commentId,
+      },
+      {
+        $set: {
+          source: "forum-comment",
+          courseId,
+          commentId,
+          text: comment.commentText,
+          authorName: comment.anonymous ? "Anonymous" : comment.userName,
+          avatar: comment.avatar || null,
+          createdAt: comment.createdAt,
+          flaggedAt: new Date(),
+          reportReason: reason?.trim() || "No reason provided",
+          reportedBy: reportedBy || "Anonymous",
+          courseClassCode: course.classCode,
+          courseName: course.courseName,
+        },
+      },
+      { upsert: true }
+    );
+
     res.status(201).json({ 
       success: true, 
       message: "Report submitted successfully. Our moderators will review this.",
-      reportId: result.insertedId 
+      reportedItemId: comment._id 
     });
   } catch (err) {
     console.error('Error reporting comment:', err);
@@ -372,28 +401,48 @@ router.post("/:courseId/comments/:commentId/replies/:replyId/report", async (req
       return res.status(404).json({ error: "Reply not found" });
     }
 
-    // Create the report
-    const reportsCollection = db.collection("reports");
-    const report = {
-      _id: new ObjectId(),
-      courseId: new ObjectId(courseId),
-      commentId: new ObjectId(commentId),
-      replyId: new ObjectId(replyId),
-      replyText: reply.replyText,
-      replyAuthor: reply.userName,
-      reason: reason || "No reason provided",
-      reportedBy: reportedBy || "Anonymous",
-      reportedAt: new Date(),
-      status: "pending",
-    };
+    reply.flagged = true;
+    reply.flaggedAt = new Date();
+    reply.reportReason = reason?.trim() || "No reason provided";
+    reply.reportedBy = reportedBy || "Anonymous";
 
-    const result = await reportsCollection.insertOne(report);
-    
-    console.log('Reply report created:', result.insertedId);
+    await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      { $set: { "comments.$": comment } }
+    );
+
+    const moderationReports = db.collection("moderationReports");
+    await moderationReports.updateOne(
+      {
+        source: "forum-reply",
+        courseId,
+        commentId,
+        replyId,
+      },
+      {
+        $set: {
+          source: "forum-reply",
+          courseId,
+          commentId,
+          replyId,
+          text: reply.replyText,
+          authorName: reply.anonymous ? "Anonymous" : reply.userName,
+          avatar: reply.avatar || null,
+          createdAt: reply.createdAt,
+          flaggedAt: new Date(),
+          reportReason: reason?.trim() || "No reason provided",
+          reportedBy: reportedBy || "Anonymous",
+          courseClassCode: course.classCode,
+          courseName: course.courseName,
+        },
+      },
+      { upsert: true }
+    );
+
     res.status(201).json({ 
       success: true, 
       message: "Report submitted successfully. Our moderators will review this.",
-      reportId: result.insertedId 
+      reportedItemId: reply._id 
     });
   } catch (err) {
     console.error('Error reporting reply:', err);
@@ -443,12 +492,50 @@ router.post("/:courseId/comments/:commentId/replies/:replyId", async (req, res) 
       anonymous: anonymous || false,
       replyText: replyText.trim(),
       replies: [],
+      flagged: false,
+      flaggedAt: null,
+      reportReason: null,
+      reportedBy: null,
       createdAt: new Date(),
     };
 
     // Search for the reply at any depth and add the new reply to it
     const found = findAndAddReplyAtDepth(comment.replies, replyId, nestedReply);
 
+
+function removeReplyAtDepth(replies, replyId) {
+  if (!replies || !Array.isArray(replies)) {
+    return false;
+  }
+
+  const initialLength = replies.length;
+  const filtered = replies.filter((reply) => reply._id.toString() !== replyId);
+  if (filtered.length !== initialLength) {
+    replies.splice(0, replies.length, ...filtered);
+    return true;
+  }
+
+  for (const reply of replies) {
+    if (removeReplyAtDepth(reply.replies, replyId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function unflagReplyAtDepth(replies, replyId) {
+  const reply = findReplyAtDepth(replies, replyId);
+  if (!reply) {
+    return false;
+  }
+
+  reply.flagged = false;
+  reply.flaggedAt = null;
+  reply.reportReason = null;
+  reply.reportedBy = null;
+  return true;
+}
     if (!found) {
       console.log('Reply not found at any depth:', replyId);
       return res.status(404).json({ error: "Course, comment, or reply not found" });
@@ -471,6 +558,157 @@ router.post("/:courseId/comments/:commentId/replies/:replyId", async (req, res) 
   } catch (err) {
     console.error('Error posting nested reply:', err);
     res.status(500).json({ error: "Failed to post nested reply" });
+  }
+});
+
+router.delete("/:courseId/comments/:commentId", async (req, res) => {
+  try {
+    const { courseId, commentId } = req.params;
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid course or comment ID" });
+    }
+
+    const { modifiedCount } = await collection.updateOne(
+      { _id: new ObjectId(courseId) },
+      { $pull: { comments: { _id: new ObjectId(commentId) } } }
+    );
+
+    if (modifiedCount === 0) {
+      return res.status(404).json({ error: "Course or comment not found" });
+    }
+
+    await db.collection("moderationReports").deleteOne({
+      source: "forum-comment",
+      courseId,
+      commentId,
+    });
+
+    const updated = await collection.findOne({ _id: new ObjectId(courseId) });
+    res.json({ success: true, comments: updated?.comments || [] });
+  } catch (err) {
+    console.error("Error deleting comment:", err);
+    res.status(500).json({ error: "Failed to delete comment" });
+  }
+});
+
+router.delete("/:courseId/comments/:commentId/replies/:replyId", async (req, res) => {
+  try {
+    const { courseId, commentId, replyId } = req.params;
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId) || !ObjectId.isValid(replyId)) {
+      return res.status(400).json({ error: "Invalid course, comment, or reply ID" });
+    }
+
+    const course = await collection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const comment = course.comments.find((item) => item._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const removed = removeReplyAtDepth(comment.replies, replyId);
+    if (!removed) {
+      return res.status(404).json({ error: "Reply not found" });
+    }
+
+    await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      { $set: { "comments.$": comment } }
+    );
+
+    await db.collection("moderationReports").deleteOne({
+      source: "forum-reply",
+      courseId,
+      commentId,
+      replyId,
+    });
+
+    const updated = await collection.findOne({ _id: new ObjectId(courseId) });
+    res.json({ success: true, comments: updated?.comments || [] });
+  } catch (err) {
+    console.error("Error deleting reply:", err);
+    res.status(500).json({ error: "Failed to delete reply" });
+  }
+});
+
+router.post("/:courseId/comments/:commentId/unflag", async (req, res) => {
+  try {
+    const { courseId, commentId } = req.params;
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid course or comment ID" });
+    }
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      {
+        $set: {
+          "comments.$.flagged": false,
+          "comments.$.flaggedAt": null,
+          "comments.$.reportReason": null,
+          "comments.$.reportedBy": null,
+        },
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: "Course or comment not found" });
+    }
+
+    await db.collection("moderationReports").deleteOne({
+      source: "forum-comment",
+      courseId,
+      commentId,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error unflagging comment:", err);
+    res.status(500).json({ error: "Failed to unflag comment" });
+  }
+});
+
+router.post("/:courseId/comments/:commentId/replies/:replyId/unflag", async (req, res) => {
+  try {
+    const { courseId, commentId, replyId } = req.params;
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(commentId) || !ObjectId.isValid(replyId)) {
+      return res.status(400).json({ error: "Invalid course, comment, or reply ID" });
+    }
+
+    const course = await collection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const comment = course.comments.find((item) => item._id.toString() === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const unflagged = unflagReplyAtDepth(comment.replies, replyId);
+    if (!unflagged) {
+      return res.status(404).json({ error: "Reply not found" });
+    }
+
+    await collection.updateOne(
+      { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+      { $set: { "comments.$": comment } }
+    );
+
+    await db.collection("moderationReports").deleteOne({
+      source: "forum-reply",
+      courseId,
+      commentId,
+      replyId,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error unflagging reply:", err);
+    res.status(500).json({ error: "Failed to unflag reply" });
   }
 });
 

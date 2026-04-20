@@ -182,6 +182,16 @@ export default function MessagingSystem({ user }) {
   const messagesEndRef = useRef(null);
   const hiddenStorageKey = user?._id ? `hiddenDmContacts:${user._id}` : null;
 
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 12000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   const persistHiddenContacts = useCallback((value) => {
     if (!hiddenStorageKey) return;
     localStorage.setItem(hiddenStorageKey, JSON.stringify(value));
@@ -208,8 +218,11 @@ export default function MessagingSystem({ user }) {
     if (!user?._id || isAnonymousUser) return;
     setContactsLoading(true);
     try {
-      const res = await fetch(`${API}/messages/contacts/${user._id}`);
-      if (!res.ok) return;
+      const res = await fetchWithTimeout(`${API}/messages/contacts/${user._id}`);
+      if (!res.ok) {
+        setSearchError('Unable to load conversations right now');
+        return;
+      }
       const data = await res.json();
 
       setContacts((prev) => {
@@ -238,6 +251,7 @@ export default function MessagingSystem({ user }) {
       });
     } catch (e) {
       console.error('fetchContacts error:', e);
+      setSearchError('Unable to load conversations right now');
     } finally {
       setContactsLoading(false);
     }
@@ -251,15 +265,19 @@ export default function MessagingSystem({ user }) {
         setMessagesLoading(true);
       }
       try {
-        const res = await fetch(
+        const res = await fetchWithTimeout(
           `${API}/messages/conversation/${user._id}/${otherId}`
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          setSearchError('Unable to load this conversation');
+          return;
+        }
         const data = await res.json();
         conversationCacheRef.current[otherId] = data;
         setMessages(data);
       } catch (e) {
         console.error('fetchMessages error:', e);
+        setSearchError('Unable to load this conversation');
       } finally {
         setMessagesLoading(false);
       }
@@ -397,6 +415,31 @@ export default function MessagingSystem({ user }) {
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
     } catch (e) {
       console.error('Delete error:', e);
+    }
+  };
+
+  const handleReportMessage = async (messageId) => {
+    try {
+      const res = await fetch(`${API}/messages/${messageId}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: 'Reported from direct messages',
+          reportedBy: user?.username || 'Unknown',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setSearchError(err.error || 'Failed to report message');
+        return;
+      }
+
+      setSearchError('Message reported');
+      setTimeout(() => setSearchError(''), 2000);
+    } catch (e) {
+      console.error('Report error:', e);
+      setSearchError('Failed to report message');
     }
   };
 
@@ -540,7 +583,10 @@ export default function MessagingSystem({ user }) {
                           delete
                         </button>
                       ) : (
-                        <button style={{ ...s.actionBtn, color: '#9ca3af' }}>
+                        <button
+                          style={{ ...s.actionBtn, color: '#9ca3af' }}
+                          onClick={() => handleReportMessage(msg._id)}
+                        >
                           report
                         </button>
                       )}
