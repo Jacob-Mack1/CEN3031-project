@@ -167,6 +167,10 @@ router.post("/", async (req, res) => {
       recipientUsername: recipientUsername || "Unknown",
       recipientAvatar: recipientAvatar || null,
       text: text.trim(),
+      flagged: false,
+      flaggedAt: null,
+      reportReason: null,
+      reportedBy: null,
       createdAt: new Date(),
     };
 
@@ -196,10 +200,72 @@ router.delete("/:messageId", async (req, res) => {
       return res.status(404).json({ error: "Message not found" });
     }
 
+    const moderationReports = await getCollection("moderationReports");
+    await moderationReports.deleteOne({ source: "dm", messageId });
+
     res.json({ message: "Message deleted" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to delete message" });
+  }
+});
+
+// Flag a message for moderation review
+router.post("/:messageId/report", async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { reason, reportedBy } = req.body;
+
+    if (!ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: "Invalid message ID" });
+    }
+
+    const msgs = await getCollection("messages");
+    const result = await msgs.findOneAndUpdate(
+      { _id: new ObjectId(messageId) },
+      {
+        $set: {
+          flagged: true,
+          flaggedAt: new Date(),
+          reportReason: reason?.trim() || "No reason provided",
+          reportedBy: reportedBy || "Anonymous",
+        },
+      },
+      { returnDocument: "after" }
+    );
+
+    const message = result?.value || result;
+    if (!message || !message._id) {
+      return res.status(404).json({ error: "Message not found" });
+    }
+
+    const moderationReports = await getCollection("moderationReports");
+    await moderationReports.updateOne(
+      { source: "dm", messageId: message._id.toString() },
+      {
+        $set: {
+          source: "dm",
+          messageId: message._id.toString(),
+          text: message.text,
+          authorName: message.senderUsername || "Unknown",
+          avatar: message.senderAvatar || null,
+          createdAt: message.createdAt,
+          flaggedAt: message.flaggedAt || new Date(),
+          reportReason: message.reportReason || "No reason provided",
+          reportedBy: message.reportedBy || "Anonymous",
+        },
+      },
+      { upsert: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Message reported successfully",
+      reportedMessageId: message._id,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to report message" });
   }
 });
 

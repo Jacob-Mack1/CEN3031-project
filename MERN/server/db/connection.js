@@ -16,26 +16,72 @@ const clientOptions = {
     strict: true,
     deprecationErrors: true,
   },
+  serverSelectionTimeoutMS: 3000,
+  connectTimeoutMS: 3000,
+  socketTimeoutMS: 5000,
 };
 
 let db = null;
+let client = null;
 let connectPromise = null;
+
+function withTimeout(promise, ms, label) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
+async function resetConnection() {
+  db = null;
+  connectPromise = null;
+  if (client) {
+    try {
+      await client.close();
+    } catch {
+      // ignore close errors during reset
+    }
+    client = null;
+  }
+}
+
+async function establishConnection() {
+  const nextClient = new MongoClient(uri, clientOptions);
+  await withTimeout(nextClient.connect(), 12000, "MongoDB connect");
+  const nextDb = nextClient.db("employees");
+  await withTimeout(nextDb.command({ ping: 1 }), 8000, "MongoDB ping");
+
+  if (client && client !== nextClient) {
+    try {
+      await client.close();
+    } catch {
+      // best-effort cleanup
+    }
+  }
+
+  client = nextClient;
+  db = nextDb;
+  console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  return db;
+}
 
 export async function connectToDatabase() {
   if (db) return db;
+
   if (!connectPromise) {
-    connectPromise = (async () => {
-      const client = new MongoClient(uri, clientOptions);
-      await client.connect();
-      await client.db("admin").command({ ping: 1 });
-      console.log("Pinged your deployment. You successfully connected to MongoDB!");
-      db = client.db("employees");
-      return db;
-    })().catch((err) => {
+    connectPromise = establishConnection().catch(async (err) => {
+      await resetConnection();
       connectPromise = null;
       throw err;
     });
   }
+
   return connectPromise;
 }
 

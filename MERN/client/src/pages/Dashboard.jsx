@@ -1,6 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import MessagingSystem from './MessagingSystem';
+import ModerationQueue from './ModerationQueue';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ export default function Dashboard() {
   const [followedCourses, setFollowedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isModQueueOpen, setIsModQueueOpen] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('currentUser');
@@ -165,6 +167,15 @@ export default function Dashboard() {
           >
             + ADD COURSE
           </button>
+          {user?.isModerator && (
+            <button
+              className="sidebar-button blocky-button blocky-button-secondary"
+              onClick={() => setIsModQueueOpen(true)}
+              title="Review reported content"
+            >
+              🛡 MOD QUEUE
+            </button>
+          )}
         </div>
 
         {/* Sign Out Button */}
@@ -241,6 +252,9 @@ export default function Dashboard() {
 
       {/* Floating Messaging System */}
       <MessagingSystem user={user} />
+
+      {/* Moderator Queue Window */}
+      <ModerationQueue user={user} isOpen={isModQueueOpen} onClose={() => setIsModQueueOpen(false)} />
     </div>
   );
 }

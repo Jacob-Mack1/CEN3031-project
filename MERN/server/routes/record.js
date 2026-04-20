@@ -103,6 +103,7 @@ router.post("/", async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       anonymous: !!anonymous,
+      isModerator: false,
       avatar: avatar || null,
       followedCourses: [],
       createdAt: new Date(),
@@ -118,6 +119,7 @@ router.post("/", async (req, res) => {
         email: created.email,
         avatar: created.avatar,
         anonymous: created.anonymous,
+        isModerator: created.isModerator || false,
         followedCourses: created.followedCourses || [],
       }
     });
@@ -142,10 +144,48 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    res.json({ message: "Login successful", user: { _id: user._id, username: user.username, email: user.email, avatar: user.avatar, anonymous: user.anonymous, followedCourses: user.followedCourses || [] } });
+    res.json({ message: "Login successful", user: { _id: user._id, username: user.username, email: user.email, avatar: user.avatar, anonymous: user.anonymous, isModerator: user.isModerator || false, followedCourses: user.followedCourses || [] } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+router.post("/:id/make-moderator", async (req, res) => {
+  try {
+    const collection = await col();
+    const id = req.params.id;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid record ID" });
+    }
+
+    const updated = await collection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { isModerator: true } },
+      { returnDocument: "after" }
+    );
+
+    const userDoc = updated?.value || updated;
+    if (!userDoc || !userDoc._id) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+
+    res.json({
+      message: "User is now a moderator",
+      user: {
+        _id: userDoc._id,
+        username: userDoc.username,
+        email: userDoc.email,
+        avatar: userDoc.avatar,
+        anonymous: userDoc.anonymous,
+        isModerator: userDoc.isModerator || false,
+        followedCourses: userDoc.followedCourses || [],
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to assign moderator role" });
   }
 });
 // Toggle follow status for a course
@@ -216,6 +256,7 @@ router.post("/:userId/follow-course", async (req, res) => {
         email: userDoc.email,
         avatar: userDoc.avatar,
         anonymous: userDoc.anonymous,
+        isModerator: userDoc.isModerator || false,
         followedCourses: userDoc.followedCourses || [],
       }
     });
@@ -276,6 +317,7 @@ router.patch("/:id", async (req, res) => {
         email: updated.email,
         avatar: updated.avatar,
         anonymous: updated.anonymous,
+        isModerator: updated.isModerator || false,
       }
     });
   } catch (err) {
