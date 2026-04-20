@@ -122,7 +122,7 @@ export default function Dashboard() {
   };
 
   const handleCourseClick = (courseId) => {
-    navigate(`/course/${courseId}`);
+    navigate(`/course/${courseId}`, { state: { from: 'dashboard' } });
   };
 
   return (

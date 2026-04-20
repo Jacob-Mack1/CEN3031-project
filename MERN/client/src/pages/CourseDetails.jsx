@@ -1,9 +1,11 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 export default function CourseDetails() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isFromDashboard = location.state?.from === 'dashboard';
   const [courseData, setCourseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -688,6 +690,16 @@ export default function CourseDetails() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%)' }} className="p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button - Top Left when from Dashboard */}
+        {isFromDashboard && (
+          <div className="mb-6">
+            <Link to="/Dashboard">
+              <button className="blocky-button blocky-button-secondary" style={{ padding: '8px 16px' }}>
+                ← BACK TO DASHBOARD
+              </button>
+            </Link>
+          </div>
+        )}
         {/* Course Post */}
         <div className="mb-8">
           <div className="blocky-card bg-white overflow-hidden">
@@ -984,14 +996,16 @@ export default function CourseDetails() {
           </div>
         )}
 
-        {/* Back Button */}
-        <div className="mt-8">
-          <Link to="/Dashboard">
-            <button className="blocky-button blocky-button-secondary" style={{ maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}>
-              ← BACK TO DASHBOARD
-            </button>
-          </Link>
-        </div>
+        {/* Back Button - Bottom when not from Dashboard */}
+        {!isFromDashboard && (
+          <div className="mt-8">
+            <Link to="/Dashboard">
+              <button className="blocky-button blocky-button-secondary" style={{ maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}>
+                ← BACK TO DASHBOARD
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
