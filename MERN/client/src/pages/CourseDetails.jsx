@@ -20,6 +20,21 @@ export default function CourseDetails() {
   const [commentError, setCommentError] = useState('');
   const [reportingData, setReportingData] = useState(null); // { type: 'comment'|'reply', commentId, replyId }
   const [reportReason, setReportReason] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const isModerator = !!currentUser?.isModerator;
+
+  const idsMatch = (left, right) => String(left) === String(right);
+
+  const removeReplyFromTree = (replies, replyId) => {
+    if (!Array.isArray(replies)) return [];
+    return replies
+      .filter((reply) => !idsMatch(reply._id, replyId))
+      .map((reply) => ({
+        ...reply,
+        replies: removeReplyFromTree(reply.replies, replyId),
+      }));
+  };
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("gatorlinkLoggedIn") === "true";
@@ -60,7 +75,16 @@ export default function CourseDetails() {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5050/courses/${courseId}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        let response;
+        try {
+          response = await fetch(`http://localhost:5050/courses/${courseId}`, {
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         const data = await response.json();
 
         if (!response.ok) {
@@ -73,7 +97,11 @@ export default function CourseDetails() {
         setComments(data.comments || []);
         setError('');
       } catch (err) {
-        setError('An error occurred while loading the course. Please try again.');
+        if (err?.name === 'AbortError') {
+          setError('Loading timed out. Please retry in a moment.');
+        } else {
+          setError('An error occurred while loading the course. Please try again.');
+        }
         setCourseData(null);
         console.error(err);
       } finally {
@@ -309,11 +337,12 @@ export default function CourseDetails() {
     e.preventDefault();
     
     if (!reportingData) {
-      setCommentError('Error: No item selected for reporting');
+      setReportError('Error: No item selected for reporting');
       return;
     }
 
-    setCommentLoading(true);
+    setReportLoading(true);
+    setReportError('');
 
     try {
       let url = `http://localhost:5050/courses/${courseId}/comments/${reportingData.commentId}`;
@@ -324,50 +353,108 @@ export default function CourseDetails() {
       
       url += '/report';
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          reason: reportReason.trim(),
-          reportedBy: currentUser?.displayName || currentUser?.username || 'Anonymous User',
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reason: reportReason.trim(),
+            reportedBy: currentUser?.displayName || currentUser?.username || 'Anonymous User',
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-      let data;
+      let data = {};
       try {
         data = await response.json();
       } catch (parseErr) {
         console.error('Failed to parse report response:', parseErr);
-        setCommentError('Server error: Invalid response. Please try again.');
-        setCommentLoading(false);
-        return;
       }
 
       if (!response.ok) {
         const errorMsg = data?.error || 'Failed to submit report';
-        setCommentError(errorMsg);
-        setCommentLoading(false);
+        setReportError(errorMsg);
         return;
       }
 
       // Success - close modal and show confirmation
-      setCommentError('');
       setReportingData(null);
       setReportReason('');
-      setCommentError(`${reportingData.type === 'reply' ? 'Reply' : 'Comment'} reported successfully. Thank you for helping keep our community safe!`);
-      
-      // Clear the success message after 3 seconds
-      setTimeout(() => {
-        setCommentError('');
-      }, 3000);
-      
-      setCommentLoading(false);
+      setReportError('');
     } catch (err) {
       console.error('Report submission error:', err);
-      setCommentError('An error occurred while submitting the report. Please try again.');
-      setCommentLoading(false);
+      if (err?.name === 'AbortError') {
+        setReportError('Reporting timed out. Please try again in a moment.');
+      } else {
+        setReportError('An error occurred while submitting the report. Please try again.');
+      }
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!isModerator) return;
+
+    const previousComments = comments;
+    setComments((prev) => prev.filter((comment) => !idsMatch(comment._id, commentId)));
+
+    try {
+      const response = await fetch(`http://localhost:5050/courses/${courseId}/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setComments(previousComments);
+        setCommentError(data.error || 'Failed to delete comment');
+        return;
+      }
+    } catch (err) {
+      setComments(previousComments);
+      console.error(err);
+      setCommentError('Failed to delete comment');
+    }
+  };
+
+  const handleDeleteReply = async (commentId, replyId) => {
+    if (!isModerator) return;
+
+    const previousComments = comments;
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (!idsMatch(comment._id, commentId)) return comment;
+        return {
+          ...comment,
+          replies: removeReplyFromTree(comment.replies, replyId),
+        };
+      })
+    );
+
+    try {
+      const response = await fetch(
+        `http://localhost:5050/courses/${courseId}/comments/${commentId}/replies/${replyId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setComments(previousComments);
+        setCommentError(data.error || 'Failed to delete reply');
+        return;
+      }
+    } catch (err) {
+      setComments(previousComments);
+      console.error(err);
+      setCommentError('Failed to delete reply');
     }
   };
 
@@ -484,7 +571,10 @@ export default function CourseDetails() {
                       <div>
                         <p className="font-semibold text-gray-900">{reply.anonymous ? 'Anonymous' : reply.userName}</p>
                         <button
-                          onClick={() => setReportingData({ type: 'reply', commentId, replyId: reply._id })}
+                          onClick={() => {
+                            setReportError('');
+                            setReportingData({ type: 'reply', commentId, replyId: reply._id });
+                          }}
                           className="text-xs text-gray-600 hover:text-red-700 font-medium transition mt-1 px-2 py-1 rounded border border-gray-300 hover:border-red-500 bg-white"
                           style={{cursor:'pointer'}}
                         >
@@ -499,16 +589,34 @@ export default function CourseDetails() {
                 {/* Reply Text */}
                 <p className="text-gray-700" style={{fontFamily:'Trebuchet MS'}}>{reply.replyText}</p>
                 
-                {/* Reply Button */}
-                {isLoggedIn && (
-                  <button
-                    onClick={() => setReplyingTo({ ...replyingTo, [replyKey]: !isReplyingTo })}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition"
-                    style={{border:'none', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '3px', paddingTop: '3px' ,marginTop: '0.5rem'}}
-                  >
-                    {isReplyingTo ? '✕ Cancel Reply' : '↳ Reply'}
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem' }}>
+                  {/* Reply Button */}
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => setReplyingTo({ ...replyingTo, [replyKey]: !isReplyingTo })}
+                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition"
+                      style={{border:'none', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '3px', paddingTop: '3px'}}
+                    >
+                      {isReplyingTo ? '✕ Cancel Reply' : '↳ Reply'}
+                    </button>
+                  )}
+                  {isModerator && (
+                    <button
+                      onClick={() => handleDeleteReply(commentId, reply._id)}
+                      className="text-sm font-medium transition"
+                      style={{
+                        marginLeft: '14px',
+                        border: '1px solid #dc2626',
+                        color: '#dc2626',
+                        backgroundColor: '#fff',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Nested Reply Form */}
@@ -728,7 +836,10 @@ export default function CourseDetails() {
                             <div>
                               <p className="font-semibold text-gray-900">{comment.anonymous ? 'Anonymous' : comment.userName}</p>
                               <button
-                                  onClick={() => setReportingData({ type: 'comment', commentId: comment._id })}
+                                  onClick={() => {
+                                    setReportError('');
+                                    setReportingData({ type: 'comment', commentId: comment._id });
+                                  }}
                                   className="text-xs text-gray-600 hover:text-red-700 font-medium transition mt-1 px-2 py-1 rounded border border-gray-300 hover:border-red-500 bg-white"
                                   style={{cursor:'pointer'}}
                               >
@@ -743,16 +854,34 @@ export default function CourseDetails() {
                       {/* Comment Text */}
                       <p className="text-gray-700 mb-3" style={{fontFamily:'Trebuchet MS'}}>{comment.commentText}</p>
                       
-                      {/* Reply Button */}
-                      {isLoggedIn && (
-                        <button
-                          onClick={() => setReplyingTo({ ...replyingTo, [comment._id]: !replyingTo[comment._id] })}
-                          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition"
-                          style={{border:'none', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '3px', paddingTop: '3px' ,marginTop: '0.5rem'}}
-                        >
-                          {replyingTo[comment._id] ? '✕ Cancel Reply' : '↳ Reply'}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5rem' }}>
+                        {/* Reply Button */}
+                        {isLoggedIn && (
+                          <button
+                            onClick={() => setReplyingTo({ ...replyingTo, [comment._id]: !replyingTo[comment._id] })}
+                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition"
+                            style={{border:'none', paddingLeft: '0px', paddingRight: '0px', paddingBottom: '3px', paddingTop: '3px'}}
+                          >
+                            {replyingTo[comment._id] ? '✕ Cancel Reply' : '↳ Reply'}
+                          </button>
+                        )}
+                        {isModerator && (
+                          <button
+                            onClick={() => handleDeleteComment(comment._id)}
+                            className="text-sm font-medium transition"
+                            style={{
+                              marginLeft: '14px',
+                              border: '1px solid #dc2626',
+                              color: '#dc2626',
+                              backgroundColor: '#fff',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Reply Form */}
@@ -824,26 +953,26 @@ export default function CourseDetails() {
                   />
                 </div>
 
-                {commentError && (
-                  <p className={`text-sm ${commentError.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
-                    {commentError}
+                {reportError && (
+                  <p className="text-sm text-red-600">
+                    {reportError}
                   </p>
                 )}
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="submit"
-                    disabled={commentLoading}
+                    disabled={reportLoading}
                     className="flex-1 px-4 py-2 blocky-button blocky-button-primary text-sm"
                   >
-                    {commentLoading ? 'Submitting...' : 'Submit Report'}
+                    {reportLoading ? 'Submitting...' : 'Submit Report'}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setReportingData(null);
                       setReportReason('');
-                      setCommentError('');
+                      setReportError('');
                     }}
                     className="flex-1 px-4 py-2 blocky-button blocky-button-secondary text-sm"
                   >
