@@ -157,7 +157,7 @@ export default function AccountSettings() {
         padding: "2rem",
       }}
     >
-      <div className="p-6" style={{ maxWidth: "800px", width: "100%" }}>
+      <div className="p-6" style={{ maxWidth: "800px", width: "100%", margin: "0 auto" }}>
         {/* Header */}
         <div className="mb-6">
           <div className="blocky-card active p-8" style={{ backgroundColor: "#ffffff" }}>

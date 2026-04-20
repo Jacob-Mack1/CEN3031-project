@@ -668,6 +668,15 @@ export default function Search() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%)' }} className="p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Link to="/Dashboard">
+            <button className="blocky-button blocky-button-secondary" style={{ padding: '8px 16px' }}>
+              ← BACK TO DASHBOARD
+            </button>
+          </Link>
+        </div>
+
         {/* Search Header */}
         <div className="mb-8">
           <div className="blocky-card bg-white p-6" align="center">
@@ -999,14 +1008,6 @@ export default function Search() {
           </div>
         )}
 
-        {/* Back Button */}
-        <div className="mt-8">
-          <Link to="/Dashboard">
-            <button className="blocky-button blocky-button-secondary" style={{ maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto', display: 'block' }}>
-              ← BACK TO DASHBOARD
-            </button>
-          </Link>
-        </div>
       </div>
     </div>
   );
