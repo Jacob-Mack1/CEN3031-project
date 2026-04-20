@@ -167,6 +167,13 @@ export default function Dashboard() {
           >
             + ADD COURSE
           </button>
+          <button
+            className="sidebar-button blocky-button blocky-button-secondary"
+            onClick={() => navigate('/faq')}
+            title="View frequently asked questions"
+          >
+            ❓ FAQ
+          </button>
           {user?.isModerator && (
             <button
               className="sidebar-button blocky-button blocky-button-secondary"

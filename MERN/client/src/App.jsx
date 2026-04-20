@@ -8,6 +8,7 @@ import Search from './pages/Search';
 import AddCourse from './pages/AddCourse';
 import Message from './pages/Message';
 import CourseDetails from './pages/CourseDetails';
+import FAQ from './pages/FAQ';
 import RecordList from './components/RecordList';
 import Record from './components/Record';
 
@@ -27,6 +28,7 @@ function App() {
       <Route path="/records" element={<RecordList />} />
       <Route path="/edit/:id" element={<Record />} />
       <Route path="/create" element={<Record />} />
+      <Route path="/faq" element={<FAQ />} />
       
       {/* OPTIONAL: 404 Page (Redirects any broken links back to Home) */}
       <Route path="*" element={<Home />} />
